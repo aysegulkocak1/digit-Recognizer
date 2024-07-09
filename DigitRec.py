@@ -2,6 +2,7 @@ from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+import numpy as np
 
 class DigitRecognizer:
     def __init__(self) :
@@ -10,20 +11,24 @@ class DigitRecognizer:
         self.RANDOM_STATE = 42
         self.digits = load_digits()
         self.NUM_CATEGORIES = 10  
+        self.learning_rate = 0.001
 
+    @tf.function
+    def bru(self, x, radix):
+        result = tf.where(x >= 0, (radix**2 * x + 1)**(1/radix), (tf.exp(radix * x) - 1/radix))
+        tf.debugging.check_numerics(result, "NaN or Inf detected in BRU activation function")
+        return result
+    
     def get_model(self):
         model = tf.keras.models.Sequential([
-            tf.keras.layers.Reshape((self.digits.images.shape[1], self.digits.images.shape[2], 1), input_shape=(self.digits.images.shape[1], self.digits.images.shape[2])),
-            tf.keras.layers.Conv2D(64, (3, 3), activation="swish"),
-            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(128, activation='swish'),
+            tf.keras.layers.Flatten(input_shape=(self.digits.images.shape[1], self.digits.images.shape[2])),
+            tf.keras.layers.Dense(128, activation=lambda x: self.bru(x, radix=1)),
             tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(self.NUM_CATEGORIES, activation="softmax")
         ])
 
         model.compile(
-            optimizer="adam",
+            optimizer=tf.keras.optimizers.Adam(self.learning_rate),
             loss="sparse_categorical_crossentropy",  
             metrics=["accuracy"]
         )
@@ -35,15 +40,21 @@ class DigitRecognizer:
         model = self.get_model()
         model.summary()  
         
-        history = model.fit(x_train, y_train, epochs=self.EPOCHS, validation_data=(x_test, y_test))
+        history = model.fit(x_train, y_train, epochs=self.EPOCHS, validation_data=(x_test, y_test),
+                            callbacks=[tf.keras.callbacks.LambdaCallback(on_epoch_end=self.check_for_nan)])
         print("Train score:", model.evaluate(x_train, y_train))
         print("Test score:", model.evaluate(x_test, y_test))
         self.plotGraphics(history)
         
-        model.save("digitmodels.h5")  
+        model.save("digitmodels.h5")
 
+    def check_for_nan(self, epoch, logs):
+        if np.isnan(logs['loss']):
+            print(f"NaN detected in loss at epoch {epoch}")
+        if 'val_loss' in logs and np.isnan(logs['val_loss']):
+            print(f"NaN detected in validation loss at epoch {epoch}")
 
-    def plotGraphics(self,history):
+    def plotGraphics(self, history):
         plt.figure(figsize=(12, 6))
 
         plt.subplot(1, 2, 1)
@@ -64,9 +75,6 @@ class DigitRecognizer:
 
         plt.tight_layout()
         plt.show()
-
-
-
 
 recognizer = DigitRecognizer()
 recognizer.recognize()
