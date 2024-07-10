@@ -55,6 +55,7 @@ class DigitRecognizer:
         cm = confusion_matrix(y_test,p.argmax(axis = 1))
         self.plotConfussion(cm,list(range(10)))
         
+        self.plot_missclassified_examples(p.argmax(axis=1),y_test,x_test)
         model.save("digitmodels.h5")
 
     def check_for_nan(self, epoch, logs):
@@ -102,6 +103,14 @@ class DigitRecognizer:
         plt.xlabel('Predicted label')
         plt.show()
 
+
+    def plot_missclassified_examples(self,p_test,y_test,x_test):
+        misclassified_idx = np.where(p_test != y_test)[0]
+        for i in range(len(misclassified_idx)):
+            plt.figure()
+            plt.imshow(x_test[misclassified_idx[i]], cmap='gray')
+            plt.title(f"True label: {y_test[misclassified_idx[i]]} Predicted: {p_test[misclassified_idx[i]]}")
+            plt.show()
 
 
 
