@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
-
+from sklearn.metrics import confusion_matrix
+import itertools
 class DigitRecognizer:
     def __init__(self) :
         self.EPOCHS = 10
@@ -44,7 +45,15 @@ class DigitRecognizer:
                             callbacks=[tf.keras.callbacks.LambdaCallback(on_epoch_end=self.check_for_nan)])
         print("Train score:", model.evaluate(x_train, y_train))
         print("Test score:", model.evaluate(x_test, y_test))
+
+        print(model.evaluate(x_test,y_test))
+
+        p = model.predict(x_test)
+
         self.plotGraphics(history)
+
+        cm = confusion_matrix(y_test,p.argmax(axis = 1))
+        self.plotConfussion(cm,list(range(10)))
         
         model.save("digitmodels.h5")
 
@@ -76,5 +85,26 @@ class DigitRecognizer:
         plt.tight_layout()
         plt.show()
 
+    def plotConfussion(self,cm, classes):
+        
+        plt.imshow(cm,interpolation="nearest",cmap=plt.cm.Blues)
+        plt.title("Confussion Matrix")
+        plt.colorbar()
+        plt.xticks(np.arange(len(classes)),classes,rotation=45)
+        plt.yticks(np.arange(len(classes)),classes)
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], "d"),
+                    horizontalalignment="center",
+                    color="white" if cm[i, j] > cm.max()/2 else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.show()
+
+
+
+
 recognizer = DigitRecognizer()
 recognizer.recognize()
+
