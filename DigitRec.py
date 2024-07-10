@@ -2,6 +2,9 @@ from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+import numpy as np
+import itertools
+from sklearn.metrics import confusion_matrix
 
 class DigitRecognizer:
     def __init__(self) :
@@ -38,8 +41,13 @@ class DigitRecognizer:
         history = model.fit(x_train, y_train, epochs=self.EPOCHS, validation_data=(x_test, y_test))
         print("Train score:", model.evaluate(x_train, y_train))
         print("Test score:", model.evaluate(x_test, y_test))
+
+        p = model.predict(x_test)
+        cm = confusion_matrix(y_test,p.argmax(axis = 1))
+
         self.plotGraphics(history)
-        
+        self.plotConfussion(cm,list(range(10)))
+        self.plot_missclassified_examples(p.argmax(axis = 1),y_test,x_test)
         model.save("digitmodels.h5")  
 
 
@@ -64,6 +72,32 @@ class DigitRecognizer:
 
         plt.tight_layout()
         plt.show()
+
+    def plotConfussion(self,cm, classes):
+        
+        plt.imshow(cm,interpolation="nearest",cmap=plt.cm.Blues)
+        plt.title("Confussion Matrix")
+        plt.colorbar()
+        plt.xticks(np.arange(len(classes)),classes,rotation=45)
+        plt.yticks(np.arange(len(classes)),classes)
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], "d"),
+                    horizontalalignment="center",
+                    color="white" if cm[i, j] > cm.max()/2 else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.show()
+
+
+    def plot_missclassified_examples(self,p_test,y_test,x_test):
+        misclassified_idx = np.where(p_test != y_test)[0]
+        for i in range(len(misclassified_idx)):
+            plt.figure()
+            plt.imshow(x_test[misclassified_idx[i]], cmap='gray')
+            plt.title(f"True label: {y_test[misclassified_idx[i]]} Predicted: {p_test[misclassified_idx[i]]}")
+            plt.show()
 
 
 
