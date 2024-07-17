@@ -8,7 +8,7 @@ from sklearn.metrics import confusion_matrix
 
 class DigitRecognizer:
     def __init__(self) :
-        self.EPOCHS = 10
+        self.EPOCHS = 30
         self.TEST_SIZE = 0.33
         self.RANDOM_STATE = 42
         self.digits = load_digits()
@@ -17,10 +17,10 @@ class DigitRecognizer:
     def get_model(self):
         model = tf.keras.models.Sequential([
             tf.keras.layers.Reshape((self.digits.images.shape[1], self.digits.images.shape[2], 1), input_shape=(self.digits.images.shape[1], self.digits.images.shape[2])),
-            tf.keras.layers.Conv2D(64, (3, 3), activation="swish"),
+            tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
             tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(128, activation='swish'),
+            tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(self.NUM_CATEGORIES, activation="softmax")
         ])
